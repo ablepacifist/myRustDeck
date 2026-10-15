@@ -30,6 +30,8 @@ http
       }
       res.writeHead(200, {
         "Content-Type": types[path.extname(file)] || "application/octet-stream",
+        // Bundle filenames are not hashed, so stop browsers/Cloudflare serving stale builds.
+        "Cache-Control": "no-cache",
       });
       res.end(data);
     });
