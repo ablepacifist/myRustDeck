@@ -53,6 +53,7 @@ export default class Connection {
   }
 
   async start(id: string) {
+    id = id.replace(/\s+/g, ""); // the native app shows IDs grouped with spaces
     try {
       await this._start(id);
     } catch (e: any) {
