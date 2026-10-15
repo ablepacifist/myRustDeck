@@ -747,7 +747,7 @@ function testDelay() {
   });
 }
 
-testDelay();
+if (!DEFAULT_SERVER) testDelay();
 
 function getDefaultUri(isRelay: Boolean = false): string {
   const host =

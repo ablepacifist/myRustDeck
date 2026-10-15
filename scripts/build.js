@@ -29,16 +29,11 @@ async function main() {
   run("npm", ["run", "build"], js);
 
   fs.rmSync(dist, { recursive: true, force: true });
-  fs.mkdirSync(path.join(dist, "js"), { recursive: true });
-  fs.cpSync(path.join(js, "dist"), path.join(dist, "js", "dist"), { recursive: true });
+  fs.cpSync(path.join(js, "dist"), dist, { recursive: true });
   fs.cpSync(path.join(root, "libs"), path.join(dist, "libs"), { recursive: true });
   for (const f of ["manifest.json", "yuv.js", "yuv.wasm"]) {
     fs.copyFileSync(path.join(root, f), path.join(dist, f));
   }
-  const html = fs
-    .readFileSync(path.join(root, "index.html"), "utf8")
-    .replace("$FLUTTER_BASE_HREF", "/");
-  fs.writeFileSync(path.join(dist, "index.html"), html);
 
   run("tar", ["-xzf", depsTar, "-C", dist], root);
   console.log("Built " + dist);
