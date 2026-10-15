@@ -20,7 +20,7 @@ export function msgbox(type, title, text) {
   if (!type || (type == 'error' && !text)) return;
   const text2 = text.toLowerCase();
   var hasRetry = checkIfRetry(type, title, text) ? 'true' : '';
-  onGlobalEvent(JSON.stringify({ name: 'msgbox', type, title, text, hasRetry }));
+  window.onGlobalEvent?.(JSON.stringify({ name: 'msgbox', type, title, text, hasRetry }));
 }
 
 function jsonfyForDart(payload) {
@@ -35,7 +35,7 @@ function jsonfyForDart(payload) {
 export function pushEvent(name, payload) {
   payload = jsonfyForDart(payload);
   payload.name = name;
-  onGlobalEvent(JSON.stringify(payload));
+  window.onGlobalEvent?.(JSON.stringify(payload));
 }
 
 let yuvWorker;
@@ -60,6 +60,7 @@ export function draw(frame) {
   } else {
     var tm0 = new Date().getTime();
     yuvCanvas.drawFrame(frame);
+    if (!window.onRgba) return;
     var width = canvas.width;
     var height = canvas.height;
     var size = width * height * 4;
@@ -330,7 +331,7 @@ export function playAudio(packet) {
 window.init = async () => {
   if (yuvWorker) {
     yuvWorker.onmessage = (e) => {
-      onRgba(e.data);
+      window.onRgba?.(e.data);
     }
   }
   opusWorker.onmessage = (e) => {
