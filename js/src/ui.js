@@ -29,7 +29,40 @@ if (app) {
 `;
 
   let player;
+  let resolutionRequested = false;
+  let resizeTimer;
   window.init();
+
+  // Space available for the remote screen (leaves room for the Cancel button).
+  function availableSize() {
+    return { w: window.innerWidth, h: Math.max(100, window.innerHeight - 40) };
+  }
+
+  // Scale the canvas (aspect preserved) to fill the window; mouse mapping uses its bounding rect.
+  function fitCanvas() {
+    const c = document.getElementById('player');
+    if (!c || !c.width || !c.height) return;
+    const a = availableSize();
+    const s = Math.min(a.w / c.width, a.h / c.height);
+    c.style.width = Math.floor(c.width * s) + 'px';
+    c.style.height = Math.floor(c.height * s) + 'px';
+  }
+
+  // Ask the host to switch to a resolution matching this window.
+  function requestResolution() {
+    const conn = globals.getConn();
+    if (!conn || document.querySelector('div#canvas').style.display !== 'block') return;
+    const a = availableSize();
+    const w = Math.max(640, Math.floor(a.w / 2) * 2);
+    const h = Math.max(480, Math.floor(a.h / 2) * 2);
+    conn.changeResolution(w, h);
+  }
+
+  window.addEventListener('resize', () => {
+    fitCanvas();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(requestResolution, 500);
+  });
 
   document.body.onload = () => {
     const host = document.querySelector('#host');
@@ -61,6 +94,11 @@ if (app) {
         */
         globals.draw(f);
         player.drawFrame(f);
+        fitCanvas();
+        if (!resolutionRequested) {
+          resolutionRequested = true;
+          requestResolution();
+        }
       });
       document.querySelector('div#status').style.display = 'block';
       document.querySelector('div#connect').style.display = 'none';
@@ -91,6 +129,7 @@ if (app) {
   }
 
   window.cancel = () => {
+    resolutionRequested = false;
     globals.close();
     document.querySelector('div#connect').style.display = 'block';
     document.querySelector('div#password').style.display = 'none';
@@ -155,8 +194,9 @@ if (app) {
     const canvas = document.getElementById('player');
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const x = Math.round((e.clientX - rect.left) * canvas.width / rect.width);
-    const y = Math.round((e.clientY - rect.top) * canvas.height / rect.height);
+    const origin = globals.getConn().getDisplayOrigin();
+    const x = origin.x + Math.round((e.clientX - rect.left) * canvas.width / rect.width);
+    const y = origin.y + Math.round((e.clientY - rect.top) * canvas.height / rect.height);
     // mask: low 3 bits = 0 move, 1 down, 2 up, 3 wheel; button bits << 3 = left 1, right 2, middle 4
     const buttons = [1, 4, 2][button] || 0; // DOM: 0 left, 1 middle, 2 right
     const mask = type | (buttons << 3);
