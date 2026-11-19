@@ -38,6 +38,7 @@ export default class Connection {
   _peerInfo: message.PeerInfo | undefined;
   _firstFrame: Boolean | undefined;
   _videoDecoder: any;
+  _curDisplay: number = 0;
   _password: Uint8Array | undefined;
   _options: any;
   _videoTestSpeed: number[];
@@ -424,6 +425,21 @@ export default class Connection {
     return n > 0 ? msg : undefined;
   }
 
+  // Remote mouse coordinates are in the host's virtual desktop space, so a
+  // display that is not at (0,0) needs its origin added.
+  getDisplayOrigin(): { x: number; y: number } {
+    const d =
+      this._peerInfo?.displays?.[this._curDisplay] ??
+      this._peerInfo?.displays?.[this._peerInfo.current_display || 0];
+    return { x: d?.x || 0, y: d?.y || 0 };
+  }
+
+  changeResolution(width: number, height: number) {
+    const change_resolution = message.Resolution.fromPartial({ width, height });
+    const misc = message.Misc.fromPartial({ change_resolution });
+    this._ws?.sendMessage({ misc });
+  }
+
   sendVideoReceived() {
     const misc = message.Misc.fromPartial({ video_received: true });
     this._ws?.sendMessage({ misc });
@@ -434,6 +450,7 @@ export default class Connection {
       this.msgbox("", "", "");
       this._firstFrame = true;
     }
+    this._curDisplay = vf.display || 0;
     if (vf.vp9s) {
       const dec = this._videoDecoder;
       var tm = new Date().getTime();
